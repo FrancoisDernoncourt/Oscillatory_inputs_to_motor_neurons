@@ -12,7 +12,7 @@ from matplotlib.patches import Patch
 from matplotlib.ticker import MultipleLocator
 from scipy.stats import gaussian_kde
 
-from analyzer_with_force import run_sliding_sync_index_analysis
+from synchrony_analysis import run_sliding_sync_index_analysis
 from parameter_set_batch_summary import (
     DEFAULT_INPUT_COMPONENT_COLORS,
     _annotate_feature_panel,
@@ -51,7 +51,7 @@ from shared_run_analysis import (
     resolve_modulation_spectrum_config as shared_resolve_modulation_spectrum_config,
     smallest_contiguous_psd_mass_interval as shared_smallest_contiguous_psd_mass_interval,
 )
-from simulator_with_force_long_AHP_output_force_of_different_pools_separately import (
+from simulator import (
     _copy_value_for_save,
     _resample_uniform_time_and_traces,
     _set_filter_params,

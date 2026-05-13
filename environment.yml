@@ -1,4 +1,4 @@
-name: mapping_RI_env_force
+name: oscillatory_inputs_mn
 channels:
   - pytorch
   - conda-forge

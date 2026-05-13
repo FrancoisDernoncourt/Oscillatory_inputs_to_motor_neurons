@@ -7480,7 +7480,7 @@ def compute_step_sync_diagnostics(params, spike_trains_MN, active_unit_selection
         return None
     logger = logger or logging.getLogger(__name__)
     try:
-        from analyzer_with_force import run_sliding_sync_index_analysis as _run_sync_index_analysis
+        from synchrony_analysis import run_sliding_sync_index_analysis as _run_sync_index_analysis
 
         step_abs_s = float(params.task_event_times_s["step_current_s"])
         sync_active_ids = np.asarray(active_unit_selection["active_unit_ids"], dtype=int)
@@ -8050,7 +8050,7 @@ def run_simulation(params=None):
     sync_diagnostics = None
     if go_nogo_cue_diagnostics_enabled and params.enable_sync_index_analysis:
         try:
-            from analyzer_with_force import run_sliding_sync_index_analysis as _run_sync_index_analysis
+            from synchrony_analysis import run_sliding_sync_index_analysis as _run_sync_index_analysis
 
             sync_analysis_window_rel_cue_s = _normalize_rel_window(params.sync_analysis_window_rel_cue_s)
             sync_active_ids = np.asarray(active_unit_selection["active_unit_ids"], dtype=int)
@@ -8444,7 +8444,7 @@ def run_simulation(params=None):
             )
         if plot_sync_diag and params.enable_sync_index_analysis and sync_diagnostics is not None:
             try:
-                from analyzer_with_force import plot_sync_trace_diagnostic as _plot_sync_trace_diagnostic
+                from synchrony_analysis import plot_sync_trace_diagnostic as _plot_sync_trace_diagnostic
                 _plot_sync_trace_diagnostic(
                     sync_diagnostics,
                     savepath=fig_dir,
@@ -8469,7 +8469,7 @@ def run_simulation(params=None):
         # Reuse the analyzer's firing-rate summary figure to avoid a separate analysis pass.
         if plot_firing_rate:
             try:
-                from analyzer_with_force import get_firing_rate as _plot_firing_rate_summary
+                from synchrony_analysis import get_firing_rate as _plot_firing_rate_summary
 
                 _plot_firing_rate_summary(
                     spike_trains_MN={f"MN_{i}": np.asarray(spk, dtype=float) for i, spk in enumerate(spike_trains_MN)},

@@ -1,0 +1,57 @@
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Local environments
+.venv/
+venv/
+env/
+
+# Private or generated experimental data
+EXP_DATA_HDF5*/
+EXP_DATA_ANALYZED_HDF5*/
+
+# Simulation and analysis outputs
+sim_batches*/
+*_sim_batches*/
+$*_sim_batches*/
+$$*_sim_batches*/
+parameter_set_summaries*/
+*_summary_outputs*/
+*_coverage_outputs*/
+*_sbi_output*/
+SBI_RUN*/
+posterior_predictive*/
+*_posterior_predictive*/
+*_toy_direct_synchrony_outputs*/
+*_outputs*/
+
+# Large generated files
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+*.npy
+*.npz
+*.mat
+
+# Figures and tables generated locally
+figures/
+outputs/
+archive/
+*.png
+*.pdf
+*.svg
+*.csv
+*.xlsx
+
+# Logs
+*.log
+simulations_progress_log.log
