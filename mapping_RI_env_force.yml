@@ -1,0 +1,28 @@
+name: mapping_RI_env_force
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - pytorch
+  - torchvision
+  - torchaudio
+  - cpuonly
+  - numpy
+  - pandas
+  - scipy
+  - matplotlib
+  - seaborn
+  - plotly
+  - cmasher
+  - h5py
+  - cython
+  - joblib
+  - psutil
+  - networkx
+  - jupyterlab
+  - ipykernel
+  - ipywidgets
+  - sbi
+  - brian2
