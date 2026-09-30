@@ -2,7 +2,7 @@
 
 Code for the simulation and simulation-based inference analyses accompanying the manuscript:
 
-- bioRxiv: [TBA]
+- bioRxiv: https://www.biorxiv.org/content/10.64898/2026.05.16.725172v2
 
 This repository focuses on two simulation components from the paper:
 
