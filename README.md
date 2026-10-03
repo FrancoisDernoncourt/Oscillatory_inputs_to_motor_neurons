@@ -11,6 +11,27 @@ This repository focuses on two simulation components from the paper:
 
 The code was mostly AI-generated, with close human supervision, inspection, and verification.
 
+## Scope of the simulator and retained code
+
+`simulator.py` originates from a broader modelling framework and retains code that is outside the scope of this manuscript. The Figure 3 / SBI workflow uses a **single motor-neuron pool without recurrent inhibition**, driven by baseline excitation, common low-frequency/alpha/beta inputs, and independent noise. Its simulated outcomes are motor-neuron spike trains and derived CST, firing-rate, ISI, and synchrony measures.
+
+The following retained components are inactive in the supplied Go/No-Go batch configuration:
+
+| Retained component | Status in this workflow |
+| --- | --- |
+| Renshaw cells and recurrent-inhibition connectivity | `run_simulation()` fixes the Renshaw-cell count to zero and uses empty/zero connectivity matrices. A disconnected placeholder cell is still instantiated internally, with no effect on motor-neuron activity. |
+| Multiple motor-neuron pools and between-pool connectivity | The runner fixes `nb_pools = 1`; the current common-input generator also requires one pool. Generalized helper code does not constitute an active multi-pool model. |
+| Motor-unit twitch properties and muscle-force production | Disabled by `enable_force_model=False`; `save_per_mu_forces=False` is also set. This concerns contractile output, not the motor-neuron spike trains used throughout the study. |
+| Force-target-derived baseline drive and force-target optimization | Disabled by `variable_excitatory_input_baseline=False` and `optimize_baseline=False`. Force-target and `opt_*` settings do not control the neural simulations in this configuration. Task-related input trends and bursts remain active. |
+| Additional slow afterhyperpolarization (AHP) component | Its spike-triggered conductance increment, `AHP_slow_conductance_delta_after_spiking`, is zero. The fast AHP component remains active. |
+| Brian2 step-current experiments and their response diagnostics | `enable_step_current=False`. The associated matched step/no-step, response-slope, latency, and response-shape routines are separate from the Figure 3 workflow. The manuscript's Figure 4 analysis uses `toy_direct_synchrony_cst_model.ipynb`, not this Brian2 extension. |
+
+Some force-target traces and zero-valued force placeholders are still generated for output compatibility even when the force model is disabled. Their presence in saved files does not mean that muscle force was simulated or used as an SBI observable. Experimental force traces are analyzed separately.
+
+These components are retained to preserve the implementation and its development history. Their presence does not imply that they were used or validated in the manuscript; legacy multi-pool and recurrent-inhibition code is not exposed as an enabled option in the current runner.
+
+**Configuration and reproducibility.** `SimulationParameters()` defaults are not the manuscript configuration: for example, they enable both force calculation and force-target-derived baseline generation, whereas `run_simulation_batch.ipynb` overrides both to `False`. The committed batch notebook is currently configured for an illustrative figure example, rather than a complete SBI training batch. For an existing run, consult its saved `sim_parameters.json` and batch prior/sampling records.
+
 ## Installation
 
 Create the Conda environment from the repository root:
@@ -48,8 +69,6 @@ Main notebooks:
 - `paper_simulation_figures.ipynb`: assemble manuscript-facing simulation figures.
 - `toy_direct_synchrony_cst_model.ipynb`: simplified Figure 4 synchrony/CST model.
 
-Legacy and non-paper workflows are kept in `archive/`.
-
 ## Data Flow
 
 The Figure 3 workflow is:
@@ -83,5 +102,4 @@ The second-stage SBI analysis uses 49 observable features extracted from the low
 
 ## Data Availability
 
-Private experimental HDF5 exports and generated simulation/SBI outputs are not included in this repository. The notebooks assume local generated outputs unless their path variables are edited.
-
+Private experimental HDF5 exports and generated simulation/SBI outputs are not included in this repository, but are publicly available at [TBA]. The notebooks assume local generated outputs unless their path variables are edited.
