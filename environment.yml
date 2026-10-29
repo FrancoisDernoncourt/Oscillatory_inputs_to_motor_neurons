@@ -1,28 +1,11 @@
+# Conda alternative to a plain virtual environment: installs the pinned packages of requirements.txt.
+#   conda env create -f environment.yml
+#   conda activate oscillatory_inputs_mn
 name: oscillatory_inputs_mn
 channels:
-  - pytorch
   - conda-forge
-  - defaults
 dependencies:
   - python=3.12
-  - pytorch
-  - torchvision
-  - torchaudio
-  - cpuonly
-  - numpy
-  - pandas
-  - scipy
-  - matplotlib
-  - seaborn
-  - plotly
-  - cmasher
-  - h5py
-  - cython
-  - joblib
-  - psutil
-  - networkx
-  - jupyterlab
-  - ipykernel
-  - ipywidgets
-  - sbi
-  - brian2
+  - pip
+  - pip:
+      - -r requirements.txt
