@@ -231,7 +231,7 @@ def fit_baseline_spline_and_extract_feature(
     residual_fit = y_fit - baseline_fit
     feature_mean_residual = float(np.mean(residual_fit[analysis_mask]))
     if np.count_nonzero(analysis_mask) >= 2:
-        feature_signed_area = float(np.trapz(residual_fit[analysis_mask], t_fit[analysis_mask]))
+        feature_signed_area = float(np.trapezoid(residual_fit[analysis_mask], t_fit[analysis_mask]))
     else:
         feature_signed_area = 0.0
     ss_res = float(np.sum((y_fit - baseline_fit) ** 2))
@@ -299,26 +299,6 @@ def fit_baseline_spline_and_extract_feature(
     )
 
 
-def build_synthetic_baseline_feature_example():
-    t = np.linspace(-2.0, 1.0, 601)
-    baseline = 0.2 * np.sin(2 * np.pi * 0.3 * t) + 0.15 * t
-    bump = 0.8 * np.exp(-0.5 * ((t - 0.25) / 0.08) ** 2)
-    y = baseline + bump
-    result = fit_baseline_spline_and_extract_feature(
-        t,
-        y,
-        fitting_window=(-2.0, 1.0),
-        analysis_window=(0.0, 0.5),
-        buffer_s=0.1,
-        spline_smoothing=None,
-        spline_order=3,
-        n_knots=None,
-        extrapolate=False,
-        return_debug_info=True,
-    )
-    return {"t": t, "baseline": baseline, "signal": y, "result": result}
-
-
 def _resolve_plot_style(plot_style=None):
     resolved = dict(DEFAULT_PLOT_STYLE)
     if plot_style:
@@ -336,14 +316,15 @@ def _resolve_distribution_style(plot_style=None):
 def _resolve_feature_config(feature_config=None):
     resolved = {
         "enabled": True,
-        "fitting_window": (-2.0, 1.0),
+        # Defaults = settings of the preprint's simulated features (the notebooks pass their own).
+        "fitting_window": (-3.0, 1.0),
         "analysis_window": (0.0, 0.5),
-        "buffer_s": 0.1,
+        "buffer_s": 0.05,
         "spline_smoothing": None,
         "spline_order": 3,
         "n_knots": None,
-        "trend_pre_window": None,
-        "trend_post_window": None,
+        "trend_pre_window": (-3.0, -1.0),
+        "trend_post_window": (0.0, 1.0),
         "extrapolate": False,
     }
     if feature_config:
@@ -2073,113 +2054,6 @@ def _collect_parameter_set_observation_features(parameter_set_dir):
     return {name: _mean_series_or_nan(df, name) for name in rows[0].keys()}
 
 
-def _baseline_window_for_saved_cst(params, n_samples, saved_fsamp_hz):
-    usable_start_s = float(params["edges_ignore_duration"])
-    analysis_start_rel_s = float(params.get("cst_analysis_window_start_s", 0.0))
-    baseline_start_s = usable_start_s + analysis_start_rel_s
-    baseline_end_s = float(params.get("get_ready_cue_time_s", np.nan))
-    if not np.isfinite(baseline_end_s):
-        return None
-    t_s = np.arange(int(n_samples), dtype=float) / float(saved_fsamp_hz)
-    mask = (t_s >= baseline_start_s) & (t_s < baseline_end_s)
-    if not np.any(mask):
-        return None
-    return mask
-
-
-def _load_baseline_observations_for_run(run_dir):
-    run_dir = Path(run_dir)
-    sim_json = run_dir / "sim_parameters.json"
-    sim_h5 = run_dir / "simulation_output.h5"
-    if not sim_json.exists() or not sim_h5.exists():
-        return {
-            "cst_low_pass_baseline_mean": np.nan,
-            "cst_alpha_hilbert_baseline_mean": np.nan,
-            "cst_beta_hilbert_baseline_mean": np.nan,
-        }
-
-    with sim_json.open("r", encoding="utf-8") as f:
-        params = json.load(f)
-
-    low_pass_mean = np.nan
-    alpha_mean = np.nan
-    beta_mean = np.nan
-    try:
-        with h5py.File(sim_h5, "r") as f:
-            cst_diag = f.get("cst_diagnostics", None)
-            if cst_diag is not None:
-                alpha_mean = _scalar_from_dataset(cst_diag, "cst_alpha_baseline_mean")
-                beta_mean = _scalar_from_dataset(cst_diag, "cst_beta_baseline_mean")
-                cst_lf = _load_dataset_if_present(cst_diag, "cst_lf")
-                if cst_lf is not None:
-                    input_grp = f["input"] if "input" in f else None
-                    saved_fsamp_hz = float(
-                        (input_grp.attrs.get("saved_fsamp_Hz") if input_grp is not None else None)
-                        or params["fsamp"]
-                    )
-                    baseline_mask = _baseline_window_for_saved_cst(params, len(cst_lf), saved_fsamp_hz)
-                    if baseline_mask is not None:
-                        finite = np.asarray(cst_lf, dtype=float)[baseline_mask]
-                        finite = finite[np.isfinite(finite)]
-                        if finite.size > 0:
-                            low_pass_mean = float(np.mean(finite))
-
-                if not np.isfinite(alpha_mean):
-                    alpha_env = _load_dataset_if_present(cst_diag, "cst_alpha_envelope")
-                    if alpha_env is not None:
-                        input_grp = f["input"] if "input" in f else None
-                        saved_fsamp_hz = float(
-                            (input_grp.attrs.get("saved_fsamp_Hz") if input_grp is not None else None)
-                            or params["fsamp"]
-                        )
-                        baseline_mask = _baseline_window_for_saved_cst(params, len(alpha_env), saved_fsamp_hz)
-                        if baseline_mask is not None:
-                            finite = np.asarray(alpha_env, dtype=float)[baseline_mask]
-                            finite = finite[np.isfinite(finite)]
-                            if finite.size > 0:
-                                alpha_mean = float(np.mean(finite))
-
-                if not np.isfinite(beta_mean):
-                    beta_env = _load_dataset_if_present(cst_diag, "cst_beta_envelope")
-                    if beta_env is not None:
-                        input_grp = f["input"] if "input" in f else None
-                        saved_fsamp_hz = float(
-                            (input_grp.attrs.get("saved_fsamp_Hz") if input_grp is not None else None)
-                            or params["fsamp"]
-                        )
-                        baseline_mask = _baseline_window_for_saved_cst(params, len(beta_env), saved_fsamp_hz)
-                        if baseline_mask is not None:
-                            finite = np.asarray(beta_env, dtype=float)[baseline_mask]
-                            finite = finite[np.isfinite(finite)]
-                            if finite.size > 0:
-                                beta_mean = float(np.mean(finite))
-    except OSError as exc:
-        _warn_unreadable_h5(sim_h5, exc)
-
-    return {
-        "cst_low_pass_baseline_mean": low_pass_mean,
-        "cst_alpha_hilbert_baseline_mean": alpha_mean,
-        "cst_beta_hilbert_baseline_mean": beta_mean,
-    }
-
-
-def _collect_parameter_set_baseline_observations(parameter_set_dir):
-    run_dirs = sorted(path.parent for path in Path(parameter_set_dir).rglob("simulation_output.h5"))
-    if not run_dirs:
-        return {
-            "cst_low_pass_baseline_mean": np.nan,
-            "cst_alpha_hilbert_baseline_mean": np.nan,
-            "cst_beta_hilbert_baseline_mean": np.nan,
-        }
-    rows = [_load_baseline_observations_for_run(run_dir) for run_dir in run_dirs]
-    df = pd.DataFrame(rows)
-    return {
-        "cst_low_pass_baseline_mean": _mean_series_or_nan(df, "cst_low_pass_baseline_mean"),
-        "cst_alpha_hilbert_baseline_mean": _mean_series_or_nan(df, "cst_alpha_hilbert_baseline_mean"),
-        "cst_beta_hilbert_baseline_mean": _mean_series_or_nan(df, "cst_beta_hilbert_baseline_mean"),
-    }
-
-
 def build_parameter_set_export_table(
     root_dir,
     parameter_set_summary_df=None,
@@ -2243,7 +2117,6 @@ def build_parameter_set_export_table(
             "SIM_SUMMARY_is_posterior_mode": bool(mode_label is not None),
             "SIM_SUMMARY_mode_observation_label": mode_label if mode_label is not None else np.nan,
             "SIM_PARAM_GENERAL_minimal_output": params.get("minimal_output", np.nan),
-            "SIM_PARAM_GENERAL_enable_force_model": params.get("enable_force_model", np.nan),
             "SIM_PARAM_GENERAL_n_sims": int(n_sims) if np.isfinite(float(n_sims)) else np.nan,
             "SIM_PARAM_GENERAL_duration": params.get("duration", np.nan),
             "SIM_PARAM_GENERAL_get_ready_cue_time_s": params.get("get_ready_cue_time_s", np.nan),

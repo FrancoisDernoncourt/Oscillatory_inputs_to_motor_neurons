@@ -121,7 +121,6 @@ EXPORT_TABLE_COLUMNS = [
     "SIM_SUMMARY_is_posterior_mode",
     "SIM_SUMMARY_mode_observation_label",
     "SIM_PARAM_GENERAL_minimal_output",
-    "SIM_PARAM_GENERAL_enable_force_model",
     "SIM_PARAM_GENERAL_n_sims",
     "SIM_PARAM_GENERAL_duration",
     "SIM_PARAM_GENERAL_get_ready_cue_time_s",
@@ -322,7 +321,7 @@ def smallest_contiguous_psd_mass_interval(freqs, psd, mass_pct):
     if freqs.size == 1:
         freq = float(freqs[0])
         return (freq, freq)
-    total_mass = float(np.trapz(psd, freqs))
+    total_mass = float(np.trapezoid(psd, freqs))
     if not np.isfinite(total_mass) or total_mass <= 0:
         peak_freq = float(freqs[int(np.nanargmax(psd))])
         return (peak_freq, peak_freq)

@@ -127,6 +127,40 @@ def find_latest_experimental_manifest(input_root):
     return manifests[-1]
 
 
+def merge_experimental_manifests(input_root):
+    """
+    Combine all export manifests under input_root into one table of the trials present on disk.
+
+    Trials were exported in several passes, and a later pass re-exports whole participant/session/condition
+    groups (e.g. P05 and P11 HAND_NOGO). Each group is taken from the newest manifest that lists it, and rows
+    whose trial file is no longer in input_root (trials removed after export) are dropped.
+    """
+    input_root = Path(input_root)
+    manifests = sorted(input_root.glob("experimental_trial_export_manifest_*.csv"))  # names end with the export time
+    if not manifests:
+        raise FileNotFoundError(f"No experimental manifest CSV was found under {input_root}")
+    group_columns = ["participant_id", "session_tag", "condition_id"]
+    claimed_groups = set()
+    frames = []
+    for manifest_csv_path in reversed(manifests):
+        df = pd.read_csv(manifest_csv_path)
+        df["manifest_csv_path"] = str(manifest_csv_path)
+        groups = list(df[group_columns].astype(str).itertuples(index=False, name=None))
+        frames.append(df[[group not in claimed_groups for group in groups]])
+        claimed_groups.update(groups)
+    merged = pd.concat(frames[::-1], ignore_index=True)
+
+    def _trial_file_exists(row):
+        try:
+            _resolve_trial_h5_path(row, input_root)
+        except FileNotFoundError:
+            return False
+        return True
+
+    on_disk = [_trial_file_exists(row) for row in merged.to_dict(orient="records")]
+    return merged[on_disk].reset_index(drop=True)
+
+
 def load_experimental_manifest(
     input_root,
     manifest_csv_path=None,
@@ -137,9 +171,13 @@ def load_experimental_manifest(
     condition_ids=None,
     max_trials=None,
 ):
+    """Load one manifest CSV, or merge all manifests under input_root when manifest_csv_path is None."""
     input_root = Path(input_root)
-    manifest_csv_path = Path(manifest_csv_path) if manifest_csv_path is not None else find_latest_experimental_manifest(input_root)
-    df = pd.read_csv(manifest_csv_path)
+    if manifest_csv_path is None:
+        df = merge_experimental_manifests(input_root)
+    else:
+        df = pd.read_csv(manifest_csv_path)
+        df["manifest_csv_path"] = str(manifest_csv_path)
     if exported_only:
         included_mask = pd.to_numeric(df.get("included", 0), errors="coerce").fillna(0).astype(int) == 1
         status_mask = df.get("status", pd.Series(index=df.index, dtype=object)).astype(str).str.lower() == "exported"
@@ -153,7 +191,6 @@ def load_experimental_manifest(
     df = df.reset_index(drop=True)
     if max_trials is not None:
         df = df.iloc[: int(max_trials)].copy()
-    df["manifest_csv_path"] = str(manifest_csv_path)
     return df
 
 
@@ -384,9 +421,6 @@ def build_experimental_analysis_params(trial_data, analysis_config):
         edges_ignore_duration=0.0,
         get_ready_cue_time_s=float(ready_abs_s),
         go_nogo_cue_delay_s=float(cue_time_abs_s - ready_abs_s),
-        enable_go_nogo_cue_diagnostics=True,
-        enable_step_current=False,
-        enable_step_sync_index_analysis=False,
         input_component_colors=dict(cfg.get("input_component_colors", DEFAULT_INPUT_COMPONENT_COLORS)),
         cst_analysis_window_start_s=float(cst_active_window_start_abs_s),
         cst_analysis_window_end_s=float(cst_active_window_end_abs_s),
@@ -657,7 +691,7 @@ def save_experimental_analysis_sidecar(
         summary_grp.attrs["minimal_output_save_spike_trains"] = save_spike_trains
         summary_grp.attrs["cst_modulation_mode"] = str(analysis_config.get("cst_modulation_mode", "zscore"))
         summary_grp.attrs["sync_trace_display_mode"] = str(analysis_config.get("sync_trace_display_mode", "absolute"))
-        summary_grp.attrs["sync_direction_mode"] = str(analysis_config.get("sync_direction_mode", "legacy_forward"))
+        summary_grp.attrs["sync_direction_mode"] = str(analysis_config.get("sync_direction_mode", "symmetric_mean"))
         summary_grp.attrs["sync_expectation_mode"] = str(analysis_config.get("sync_expectation_mode", "analytic"))
         summary_grp.attrs["raw_input_root"] = str(Path(raw_input_root).resolve())
         summary_grp.create_dataset("full_window_rel_cue_s", data=np.asarray(params.full_window_rel_cue_s, dtype=float))
@@ -834,7 +868,7 @@ def analyze_experimental_manifest(
                         sync_win_ms=float(analysis_config.get("sync_win_ms", 80.0)),
                         sync_step_ms=float(analysis_config.get("sync_step_ms", 10.0)),
                         coinc_lag_ms=float(analysis_config.get("sync_coinc_lag_ms", 6.0)),
-                        direction_mode=str(analysis_config.get("sync_direction_mode", "legacy_forward")),
+                        direction_mode=str(analysis_config.get("sync_direction_mode", "symmetric_mean")),
                         expectation_mode=str(analysis_config.get("sync_expectation_mode", "analytic")),
                         n_surrogates=int(analysis_config.get("sync_n_surrogates", 100)),
                         surrogate_min_shift_ms=float(analysis_config.get("sync_surrogate_min_shift_ms", 1.0)),
@@ -1258,7 +1292,7 @@ def _compute_baseline_modulation_spectrum(run, band_key, spectrum_config):
     if not np.isfinite(dt) or dt <= 0:
         return None, None
     fsamp = 1.0 / dt
-    freqs, psd = _compute_psd_full_resolution(spectrum_signal, fsamp=fsamp)
+    freqs, psd = compute_psd_full_resolution(spectrum_signal, fsamp=fsamp)
     max_freq_hz = spectrum_config.get("max_freq_hz")
     if max_freq_hz is not None:
         keep_mask = np.asarray(freqs, dtype=float) <= float(max_freq_hz)

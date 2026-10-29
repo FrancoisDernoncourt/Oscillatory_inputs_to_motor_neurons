@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.offsetbox import AnnotationBbox, HPacker, TextArea, VPacker
-from matplotlib.colors import TwoSlopeNorm, to_rgb
+from matplotlib.colors import TwoSlopeNorm, to_hex, to_rgb
 from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
 from matplotlib.lines import Line2D
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
@@ -155,10 +155,19 @@ def resolve_priors_pickle_from_sim_table(sim_table_path: str | Path) -> Path:
     return candidates[0]
 
 
+class _RenamedModuleUnpickler(pickle.Unpickler):
+    """Unpickler for files saved when simulator.py still had its former module name."""
+
+    _RENAMED_MODULES = {"simulator_with_force_long_AHP_output_force_of_different_pools_separately": "simulator"}
+
+    def find_class(self, module, name):
+        return super().find_class(self._RENAMED_MODULES.get(module, module), name)
+
+
 def load_priors_bundle(priors_pickle_path: str | Path) -> dict[str, Any]:
     priors_pickle_path = Path(priors_pickle_path)
     with priors_pickle_path.open("rb") as f:
-        bundle = pickle.load(f)
+        bundle = _RenamedModuleUnpickler(f).load()
     if not isinstance(bundle, dict):
         raise TypeError(f"Unexpected priors pickle payload type: {type(bundle)}")
     return bundle
@@ -3481,7 +3490,7 @@ def plot_feature_parameter_relevance_grid(
         unique_labels = list(dict.fromkeys(exp_observation_labels))
         if isinstance(experimental_guide_colors, dict):
             guide_colors_by_label = {
-                label: str(experimental_guide_colors.get(label, _qualitative_cmap_color(str(experimental_guide_cmap), idx)))
+                label: str(experimental_guide_colors.get(label, to_hex(_qualitative_cmap_color(str(experimental_guide_cmap), idx))))
                 for idx, label in enumerate(unique_labels)
             }
         elif experimental_guide_colors is not None:
@@ -4126,7 +4135,7 @@ def prepare_inference_dataset_from_sim_rows(
     empty_exp = pd.DataFrame(columns=["observation_label", *EXPERIMENTAL_METADATA_COLUMNS, "n_rows_aggregated", *selected_features])
     return InferenceDatasetBundle(
         sim_table_path=Path("." if sim_table_path is None else sim_table_path),
-        exp_table_path=Path("." if sim_table_path is None else sim_table_path),
+        exp_table_path=Path("."),  # simulation-only dataset: no experimental table
         priors_pickle_path=Path("." if priors_pickle_path is None else priors_pickle_path),
         sim_rows_used=sim_rows_used,
         exp_observations=empty_exp,

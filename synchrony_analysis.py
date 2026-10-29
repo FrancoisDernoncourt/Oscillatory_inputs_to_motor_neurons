@@ -360,7 +360,7 @@ def summarize_sync_trace(sync_result, baseline_win=(-3.0, -2.0), post_win=(0.3, 
     else:
         post_peak_width_sec = 0.0
 
-    post_integral_above_baseline = float(np.trapz(np.maximum(post_values - baseline_mean, 0.0), post_times))
+    post_integral_above_baseline = float(np.trapezoid(np.maximum(post_values - baseline_mean, 0.0), post_times))
     return {
         "baseline_mean": baseline_mean,
         "baseline_std": baseline_std,
@@ -447,7 +447,6 @@ def run_sliding_sync_index_analysis(
 
 def get_firing_rate(
     spike_trains_MN,
-    spike_trains_RC=None,
     generate_figure=False,
     savepath=None,
     figure_name="ANALYSIS_Firing_rate_and_ISI.png",
@@ -473,28 +472,6 @@ def get_firing_rate(
         mean_isi = np.mean(isis)
         raw_cov = (np.std(isis) / mean_isi) if mean_isi > 0 else np.nan
         cov_MN[mn_id] = raw_cov if (not np.isnan(raw_cov) and raw_cov >= 0.01) else 0.0
-
-    firing_rates_RC = {"mean": {}, "std": {}, "max": {}, "min": {}}
-    cov_RC = {}
-    if spike_trains_RC is not None:
-        for rc_id, spike_times in spike_trains_RC.items():
-            if len(spike_times) < 2:
-                firing_rates_RC["mean"][rc_id] = 0.0
-                firing_rates_RC["std"][rc_id] = 0.0
-                firing_rates_RC["max"][rc_id] = 0.0
-                firing_rates_RC["min"][rc_id] = 0.0
-                cov_RC[rc_id] = np.nan
-                continue
-            times = np.asarray(spike_times)
-            inst_rates = 1.0 / np.diff(times)
-            firing_rates_RC["mean"][rc_id] = np.mean(inst_rates)
-            firing_rates_RC["std"][rc_id] = np.std(inst_rates)
-            firing_rates_RC["max"][rc_id] = np.max(inst_rates)
-            firing_rates_RC["min"][rc_id] = np.min(inst_rates)
-            isis = np.diff(times)
-            mean_isi = np.mean(isis)
-            raw_cov = np.std(isis) / mean_isi if mean_isi > 0 else np.nan
-            cov_RC[rc_id] = raw_cov if (not np.isnan(raw_cov) and raw_cov >= 0.01) else 0.0
 
     if generate_figure:
         mn_ids = list(firing_rates_MN["mean"].keys())
@@ -526,14 +503,11 @@ def get_firing_rate(
         isi_max = np.array(isi_max)
         isi_min = np.array(isi_min)
 
-        rc_ids = list(firing_rates_RC["mean"].keys()) if spike_trains_RC is not None else []
-        cov_vals_RC = np.array([cov_RC[r] for r in rc_ids]) if spike_trains_RC is not None and cov_RC else np.array([])
-
-        fig = plt.figure(figsize=(16, 8))
+        fig = plt.figure(figsize=(13, 8))
         gs = fig.add_gridspec(
             nrows=2,
-            ncols=3,
-            width_ratios=[3, 1, 1],
+            ncols=2,
+            width_ratios=[3, 1],
             height_ratios=[1, 1],
             hspace=0.4,
             wspace=0.3,
@@ -557,16 +531,6 @@ def get_firing_rate(
             ax1.set_ylabel("Count")
             ax1.set_title("MN mean-FR histogram")
 
-        if spike_trains_RC is not None:
-            fr_means_RC = np.array([firing_rates_RC["mean"][r] for r in rc_ids])
-            fr_means_RC = fr_means_RC[np.isfinite(fr_means_RC)]
-            if fr_means_RC.size > 0 and fr_means_RC[fr_means_RC > 0.1].size > 0:
-                ax2 = fig.add_subplot(gs[0, 2])
-                ax2.hist(fr_means_RC, bins="auto", color="C4", edgecolor="k", alpha=0.7)
-                ax2.set_xlabel("Mean firing rate (Hz)")
-                ax2.set_ylabel("Count")
-                ax2.set_title("RC mean-FR histogram")
-
         ax3 = fig.add_subplot(gs[1, 0])
         ax3.plot(idx_MN, isi_means, color="C2", label="Mean ISI")
         ax3.fill_between(idx_MN, isi_means - isi_stds, isi_means + isi_stds, color="C2", alpha=0.3, label="+/- STD")
@@ -588,16 +552,8 @@ def get_firing_rate(
             ax4.set_ylabel("Count")
             ax4.set_title("MN ISI-CV histogram")
 
-        cov_vals_RC = cov_vals_RC[np.isfinite(cov_vals_RC)]
-        if cov_vals_RC.size > 0:
-            ax5 = fig.add_subplot(gs[1, 2])
-            ax5.hist(cov_vals_RC, bins="auto", color="C4", edgecolor="k", alpha=0.7)
-            ax5.set_xlabel("ISI CV (std/mean)")
-            ax5.set_ylabel("Count")
-            ax5.set_title("RC ISI-CV histogram")
-
         if savepath is not None:
             plt.savefig(os.path.join(savepath, figure_name), bbox_inches="tight")
         plt.close(fig)
 
-    return firing_rates_MN, firing_rates_RC, cov_MN, cov_RC
+    return firing_rates_MN, cov_MN
