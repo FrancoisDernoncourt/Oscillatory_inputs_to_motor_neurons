@@ -80,7 +80,7 @@ These points describe what the code does where the preprint's text is incomplete
 - **Afterhyperpolarisation.** The AHP reversal potential equals the resting potential (0 mV in the model's units, where rest is 0 mV and the spike threshold 10 mV). An earlier −13.3 mV setting in the code was never applied to the simulations.
 - **SBI networks.** Stage 1 used a single masked autoregressive flow (batch size 200, learning rate 5×10⁻⁴); stage 2 used an ensemble of five (batch size 128, learning rate 2×10⁻⁴) whose posterior samples are pooled. The held-out validation of each stage trains five networks on random 90/10 splits.
 - **Stage-1 filter settings.** The Butterworth filter orders depend on the cutoff frequency. Stage-1 simulations used orders 5 (alpha) and 6 (beta) both to generate the inputs and to analyse the CST; stage 2 and the experiment used 8 and 10. Simulations from the same stage-1 posterior give the same baseline alpha and beta CST amplitudes with either setting (differences below 0.04 SD of the training features).
-- **Burst and trend features.** The "smoothing spline" fitted to each profile over −3 to +1 s uses the default smoothing factor (number of points × variance), with which the fit has no interior knots: it is a least-squares polynomial of the chosen degree.
+- **Burst and trend features.** The "smoothing spline" fitted to each profile over −3 to +1 s, excluding the burst window (0 to 0.5 s), uses the default smoothing factor (number of points × variance), with which the fit has no interior knots: it is a least-squares polynomial of degree 4.
 - **Active motor units.** Units with a mean discharge rate of at least 3 Hz are kept; in simulations the rate is computed over the whole analysed window, in the experiment over −4 to −3 s.
 - **Stage-2 training set.** 1,201 parameter sets × 32 simulations = 38,432 simulations.
 
@@ -92,6 +92,15 @@ Code cleanup, with unchanged results (checked by re-running saved paper simulati
 - Removed the simplified synchrony model of Figure 4 (`toy_direct_synchrony_cst_model.ipynb`), which is no longer part of the manuscript.
 - Fixed two notebooks whose analysis cells had been overwritten (`run_sbi_sim_exp.ipynb`, `compare_sim_vs_exp_feature_coverage.ipynb`), and made the saved parameter files of the paper's batches loadable again (they refer to the simulator's former module name).
 - Added `data_paths.py`, pinned requirements, and notebook settings that reproduce each of the preprint's runs.
+
+Analysis changes, which alter the stage-2 results:
+
+- **Polynomial degree of the burst/trend fits.** Degree 4 for every feature. The preprint used degree 3 for the simulated features but degree 4 for the experimental ones.
+- **Burst window excluded from the fit.** Exactly 0 to 0.5 s, as described in the manuscript; the preprint excluded −0.05 to 0.55 s.
+- **Baseline window of the stage-2 features.** −2 to −1 s, as described in the manuscript and as in the EEG and CST analyses; the preprint used −3 to −2 s. Stage 1 is unchanged.
+- **Experimental features.** Recomputed from the exported trials with the current code. Synchrony and ISI-CV now exclude units discharging below 3 Hz, as the CST already did; the preprint's experimental analysis still included them in these two measures. The current export has 10 (Hand_Go), 15 (Hand_NoGo) and 15 (DF_NoGo) participants.
+
+Stage 2 was therefore retrained and the posterior-predictive checks re-simulated; stage 1 and the stage-2 training simulations are unchanged.
 
 ## Repository structure
 

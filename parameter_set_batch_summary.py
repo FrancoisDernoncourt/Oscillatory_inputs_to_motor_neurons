@@ -316,12 +316,12 @@ def _resolve_distribution_style(plot_style=None):
 def _resolve_feature_config(feature_config=None):
     resolved = {
         "enabled": True,
-        # Defaults = settings of the preprint's simulated features (the notebooks pass their own).
+        # Defaults = settings of the burst/trend features (the notebooks pass their own).
         "fitting_window": (-3.0, 1.0),
         "analysis_window": (0.0, 0.5),
-        "buffer_s": 0.05,
+        "buffer_s": 0.0,
         "spline_smoothing": None,
-        "spline_order": 3,
+        "spline_order": 4,
         "n_knots": None,
         "trend_pre_window": (-3.0, -1.0),
         "trend_post_window": (0.0, 1.0),

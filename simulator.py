@@ -189,7 +189,7 @@ class SimulationParameters:
     modulation_spectrum_interval_mass_pct: float = float(DEFAULT_MODULATION_SPECTRUM_CONFIG["interval_mass_pct"])
     feature_fitting_window_rel_cue_s: List[float] = field(default_factory=lambda: [-4.0, 1.0])
     feature_analysis_window_rel_cue_s: List[float] = field(default_factory=lambda: [0.0, 0.5])
-    feature_buffer_s: float = 0.1
+    feature_buffer_s: float = 0.0
     summary_window_overlay_specs: Dict[str, Dict[str, float | str | bool]] = field(default_factory=lambda: {
         "firing_rate_isi_window_rel_cue_s": {"enabled": True, "label": "FR / ISI window", "color": "#37a055", "lw": 2.0, "alpha": 1.0, "y_axes": 0.02},
         "cst_modulation_normalization_window_rel_cue_s": {"enabled": True, "label": "CST normalization window", "color": "#ffa600", "lw": 2.0, "alpha": 0.95, "y_axes": 0.05},
