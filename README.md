@@ -39,7 +39,7 @@ Both backends give the same results up to rounding (about 1e-11 on the saved fea
 
 ## Data
 
-The data are not stored in this repository: experimental exports, simulation batches, trained networks and figure inputs will be shared on data.gouv.fr [link to be added]. Place the dataset folder `DATA_sim_and_exp/` at the repository root, or change `DATA_ROOT` in [data_paths.py](data_paths.py); every notebook builds its paths from that file.
+The data are not stored in this repository: experimental exports, simulation batches, trained networks and figure inputs will be shared on data.gouv.fr [link to be added]. Place the dataset folder `DATA_sim_and_exp/` at the repository root, or change `DATA_ROOT` in [data_paths.py](data_paths.py); every notebook builds its paths from that file. On Windows, keep the repository at a short location (e.g. `C:\code\`) or enable long paths: some output files are nested deeply, and Windows otherwise limits paths to 260 characters.
 
 What you need depends on what you want to do (names as in `data_paths.py`):
 
