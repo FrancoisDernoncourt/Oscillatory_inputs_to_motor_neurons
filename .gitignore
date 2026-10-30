@@ -1,3 +1,6 @@
+# This repository only tracks code and documentation. Data, simulation outputs, figures and
+# documents are shared separately (see README, "Data availability").
+
 # Python caches
 __pycache__/
 *.py[cod]
@@ -9,20 +12,25 @@ __pycache__/
 # Jupyter
 .ipynb_checkpoints/
 
-# Local environments
+# Local environments and editor settings
 .venv/
 venv/
 env/
+.vscode/
+.idea/
 
-# Private or generated experimental data
+# Data folders (local copies of the shared dataset)
+DATA_sim_and_exp/
 EXP_DATA_HDF5*/
 EXP_DATA_ANALYZED_HDF5*/
 
-# Simulation and analysis outputs
+# Simulation, SBI and figure outputs
+simulation_batch_*/
 sim_batches*/
 *_sim_batches*/
 $*_sim_batches*/
 $$*_sim_batches*/
+*sim_example_for_figure*/
 parameter_set_summaries*/
 *_summary_outputs*/
 *_coverage_outputs*/
@@ -30,10 +38,15 @@ parameter_set_summaries*/
 SBI_RUN*/
 posterior_predictive*/
 *_posterior_predictive*/
-*_toy_direct_synchrony_outputs*/
 *_outputs*/
+paper_figures/
+figures/
+outputs/
+archive/
+sbi-logs/
+*.tfevents.*
 
-# Large generated files
+# Data and binary files
 *.h5
 *.hdf5
 *.pkl
@@ -41,17 +54,35 @@ posterior_predictive*/
 *.npy
 *.npz
 *.mat
+*.csv
+*.tsv
+*.parquet
+*.feather
+*.json
+!pyrightconfig.json
+*.zip
+*.gz
+*.7z
+*.tar
 
-# Figures and tables generated locally
-figures/
-outputs/
-archive/
+# Figures, media and documents
 *.png
+*.jpg
+*.jpeg
+*.gif
+*.tif
+*.tiff
 *.pdf
 *.svg
-*.csv
+*.mp4
+*.avi
+*.mov
+*.docx
+*.doc
+*.pptx
 *.xlsx
+*.xls
+~$*
 
 # Logs
 *.log
-simulations_progress_log.log

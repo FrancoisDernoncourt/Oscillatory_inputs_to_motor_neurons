@@ -1,0 +1,18 @@
+{
+  "include": ["*.py", "tests"],
+  "exclude": [
+    "**/__pycache__",
+    "**/.*",
+    ".venv",
+    "DATA_sim_and_exp",
+    "EXP_DATA*",
+    "**/*_sim_batches*",
+    "**/*_sbi_output*",
+    "**/*posterior_predictive*",
+    "paper_figures",
+    "sbi-logs"
+  ],
+  "pythonVersion": "3.12",
+  "venvPath": ".",
+  "venv": ".venv"
+}
